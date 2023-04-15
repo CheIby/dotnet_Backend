@@ -10,25 +10,24 @@ namespace server.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
-        private readonly WebappContext WebappContext;
+        private readonly MydbContext MydbContext;
 
-        public UserController(WebappContext WebappContext)
+        public UserController(MydbContext MydbContext)
         {
-            this.WebappContext = WebappContext;
+            this.MydbContext = MydbContext;
         }
 
         [HttpGet("GetUsers")]
         public async Task<ActionResult<List<UserDTO>>> Get()
         {
-            var List = await WebappContext.Users.Select(
+            var List = await MydbContext.Users.Select(
                 s => new UserDTO
                 {
                     Id = s.Id,
-                    FirstName = s.FirstName,
-                    LastName = s.LastName,
+                    UserId = s.UserId,
                     Username = s.Username,
                     Password = s.Password,
-                    EnrollmentDate = s.EnrollmentDate
+                    Score = s.Score
                 }
             ).ToListAsync();
 
@@ -45,14 +44,13 @@ namespace server.Controllers
         [HttpGet("GetUserById")]
         public async Task<ActionResult<UserDTO>> GetUserById(int Id)
         {
-            UserDTO User = await WebappContext.Users.Select(s => new UserDTO
+            UserDTO User = await MydbContext.Users.Select(s => new UserDTO
             {
                 Id = s.Id,
-                FirstName = s.FirstName,
-                LastName = s.LastName,
+                UserId = s.UserId,
                 Username = s.Username,
                 Password = s.Password,
-                EnrollmentDate = s.EnrollmentDate
+                Score = s.Score
             }).FirstOrDefaultAsync(s => s.Id == Id);
             if (User == null)
             {
@@ -67,43 +65,44 @@ namespace server.Controllers
         [HttpPost("InsertUser")]
         public async Task<HttpStatusCode> InsertUser(UserDTO User)
         {
+            Guid myuuid = Guid.NewGuid();
+            string myuuidAsString = myuuid.ToString();
             var entity = new User()
             {
-                FirstName = User.FirstName,
-                LastName = User.LastName,
+                UserId = myuuidAsString,
                 Username = User.Username,
                 Password = User.Password,
-                EnrollmentDate = User.EnrollmentDate
+                Score = 0
             };
-            WebappContext.Users.Add(entity);
-            await WebappContext.SaveChangesAsync();
+            MydbContext.Users.Add(entity);
+            await MydbContext.SaveChangesAsync();
             return HttpStatusCode.Created;
         }
 
-        [HttpPut("UpdateUser")]
-        public async Task<HttpStatusCode> UpdateUser(UserDTO User)
-        {
-            var entity = await WebappContext.Users.FirstOrDefaultAsync(s => s.Id == User.Id);
-            entity.FirstName = User.FirstName;
-            entity.LastName = User.LastName;
-            entity.Username = User.Username;
-            entity.Password = User.Password;
-            entity.EnrollmentDate = User.EnrollmentDate;
-            await WebappContext.SaveChangesAsync();
-            return HttpStatusCode.OK;
-        }
+        // [HttpPut("UpdateUser")]
+        // public async Task<HttpStatusCode> UpdateUser(UserDTO User)
+        // {
+        //     var entity = await MydbContext.Users.FirstOrDefaultAsync(s => s.Id == User.Id);
+        //     entity.FirstName = User.FirstName;
+        //     entity.LastName = User.LastName;
+        //     entity.Username = User.Username;
+        //     entity.Password = User.Password;
+        //     entity.EnrollmentDate = User.EnrollmentDate;
+        //     await MydbContext.SaveChangesAsync();
+        //     return HttpStatusCode.OK;
+        // }
 
-        [HttpDelete("DeleteUser/{Id}")]
-        public async Task<HttpStatusCode> DeleteUser(int Id)
-        {
-            var entity = new User()
-            {
-                Id = Id
-            };
-            WebappContext.Users.Attach(entity);
-            WebappContext.Users.Remove(entity);
-            await WebappContext.SaveChangesAsync();
-            return HttpStatusCode.OK;
-        }
+        // [HttpDelete("DeleteUser/{Id}")]
+        // public async Task<HttpStatusCode> DeleteUser(int Id)
+        // {
+        //     var entity = new User()
+        //     {
+        //         Id = Id
+        //     };
+        //     MydbContext.Users.Attach(entity);
+        //     MydbContext.Users.Remove(entity);
+        //     await MydbContext.SaveChangesAsync();
+        //     return HttpStatusCode.OK;
+        // }
     }
 }

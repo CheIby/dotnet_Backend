@@ -1,6 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using MySql.EntityFrameworkCore.Extensions;
 using server.Entities;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,9 +14,30 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-builder.Services.AddEntityFrameworkMySQL().AddDbContext<WebappContext>(options => {
+builder.Services.AddEntityFrameworkMySQL().AddDbContext<MydbContext>(options => {
     options.UseMySQL(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(o =>
+{
+   o.TokenValidationParameters = new TokenValidationParameters
+   {
+       ValidIssuer = builder.Configuration["Jwt:Issuer"],
+       ValidAudience = builder.Configuration["Jwt:Audience"],
+       IssuerSigningKey = new SymmetricSecurityKey
+        (Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"])),
+       ValidateIssuer = true,
+       ValidateAudience = true,
+       ValidateLifetime = false,
+       ValidateIssuerSigningKey = true
+   };
+});
+builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
