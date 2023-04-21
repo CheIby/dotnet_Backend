@@ -11,6 +11,8 @@ public partial class Order
 
     public string OrderId { get; set; } = null!;
 
+    public int PiorityScore {get; set; }
+
     public string Restaurant { get; set; } = null!;
 
     public string Detail { get; set; } = null!;

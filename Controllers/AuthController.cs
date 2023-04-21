@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using server.DTO;
+using server.DTO.User;
 using server.Entities;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
@@ -24,21 +25,29 @@ namespace server.Controllers
         }
 
         [HttpPost("Register")]
-        public async Task<HttpStatusCode> Register(UserDTO User)
+        public async Task<HttpStatusCode> Register(AddUserDTO User)
         {
-            Guid myuuid = Guid.NewGuid();
-            string myuuidAsString = myuuid.ToString();
-            string passwordHash = BCrypt.Net.BCrypt.HashPassword(User.Password);
-            var entity = new User()
-            {
-                UserId = myuuidAsString,
-                Username = User.Username,
-                Password = passwordHash,
-                Score = 0
-            };
-            MydbContext.Users.Add(entity);
-            await MydbContext.SaveChangesAsync();
-            return HttpStatusCode.Created;
+            if(User.Password.Length==0 || User.Username.Length==0){
+                return HttpStatusCode.BadRequest;
+            }
+            try{
+                Guid myuuid = Guid.NewGuid();
+                string myuuidAsString = myuuid.ToString();
+                string passwordHash = BCrypt.Net.BCrypt.HashPassword(User.Password);
+                var entity = new User()
+                {
+                    UserId = myuuidAsString,
+                    Username = User.Username,
+                    Password = passwordHash,
+                    Score = 0,
+                    UserImg = "nullUser.png"
+                };
+                MydbContext.Users.Add(entity);
+                await MydbContext.SaveChangesAsync();
+                return HttpStatusCode.Created;
+            }catch{
+                return HttpStatusCode.InternalServerError;
+            }
         }
 
         [HttpPost("Login")]
@@ -54,7 +63,11 @@ namespace server.Controllers
                 var secretKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["JWT:Key"]));
                 var signinCredentials = new SigningCredentials(secretKey, SecurityAlgorithms.HmacSha256);
                 var claims = new[]{
-                    new Claim("UserId", foundUser.UserId.ToString())
+                    new Claim("Id", foundUser.Id.ToString()),
+                    new Claim("UserId", foundUser.UserId.ToString()),
+                    new Claim("Username", foundUser.Username.ToString()),
+                    new Claim("Score", foundUser.Score.ToString()),
+                    new Claim("UserImg", foundUser.UserImg.ToString())
                     };
                 var tokeOptions = new JwtSecurityToken(
                     issuer: Configuration["JWT:Issuer"],

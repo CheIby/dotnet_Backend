@@ -42,6 +42,7 @@ public partial class MydbContext : DbContext
             entity.Property(e => e.OrderId)
                 .HasMaxLength(45)
                 .HasColumnName("Order_Id");
+            entity.Property(e=> e.PiorityScore).HasColumnName("Piority_Score");
             entity.Property(e => e.ReceiveLocation)
                 .HasMaxLength(45)
                 .HasColumnName("Receive_location");
@@ -103,6 +104,7 @@ public partial class MydbContext : DbContext
                 .HasMaxLength(45)
                 .HasColumnName("User_Id");
             entity.Property(e => e.Username).HasMaxLength(45);
+            entity.Property(e => e.UserImg).HasMaxLength(500);
         });
 
         OnModelCreatingPartial(modelBuilder);

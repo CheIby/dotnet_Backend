@@ -15,6 +15,8 @@ public partial class User
 
     public int Score { get; set; }
 
+    public string UserImg {get; set;}
+
     public virtual ICollection<OrderComment> OrderComments { get; set; } = new List<OrderComment>();
 
     public virtual ICollection<Order> Orders { get; set; } = new List<Order>();

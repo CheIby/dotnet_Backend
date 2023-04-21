@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using server.DTO;
 using server.Entities;
 using System.Net;
+using System.IO;
 
 namespace server.Controllers
 {
@@ -11,10 +12,12 @@ namespace server.Controllers
     public class UserController : ControllerBase
     {
         private readonly MydbContext MydbContext;
+        private readonly IConfiguration Configuration;
 
-        public UserController(MydbContext MydbContext)
+        public UserController(MydbContext MydbContext, IConfiguration Configuration)
         {
             this.MydbContext = MydbContext;
+            this.Configuration = Configuration;
         }
 
         [HttpGet("GetUsers")]
@@ -31,53 +34,78 @@ namespace server.Controllers
                 }
             ).ToListAsync();
 
-            if (List.Count < 0)
+            var sorted = List.OrderBy(e => e.Score).ToList();
+
+            if (sorted.Count < 0)
             {
                 return NotFound();
             }
             else
             {
-                return List;
+                return sorted;
             }
         }
 
-        [HttpGet("GetUserById")]
-        public async Task<ActionResult<UserDTO>> GetUserById(int Id)
-        {
+        [HttpPatch("[action]/{UserId}")]
+        public async Task<HttpStatusCode> UpdateUser(int UserId,[FromForm] UpdateUserDTO updateUser){
+            var foundUser = await MydbContext.Users.FindAsync(UserId);
+            if (User is null){
+                return HttpStatusCode.NotFound;
+            }
+            bool match = BCrypt.Net.BCrypt.Verify(updateUser.Password, foundUser.Password);
+            if (match){
+                try{
+                    var filepath = Path.Combine(Directory.GetCurrentDirectory(),"static",updateUser.Image.FileName);
+                    await updateUser.Image.CopyToAsync(new FileStream(filepath, FileMode.Create));
+                    foundUser.Username = updateUser.Username;
+                    foundUser.UserImg=  updateUser.Image.FileName.ToString();
+                    await MydbContext.SaveChangesAsync();
+                    return HttpStatusCode.OK;
+                 }catch(Exception err){
+                return HttpStatusCode.BadRequest;
+                }
+            }
+            return HttpStatusCode.Unauthorized;
+        }
+
+        [HttpGet("[action]/{UserId}")]
+        public async Task<IActionResult> GetUserById(string UserId)
+        {   
             UserDTO User = await MydbContext.Users.Select(s => new UserDTO
             {
                 Id = s.Id,
                 UserId = s.UserId,
                 Username = s.Username,
                 Password = s.Password,
-                Score = s.Score
-            }).FirstOrDefaultAsync(s => s.Id == Id);
+                Score = s.Score,
+                UserImg = s.UserImg
+            }).FirstOrDefaultAsync(s => s.UserId == UserId);
             if (User == null)
             {
                 return NotFound();
             }
             else
             {
-                return User;
+                var userInfo = new GetUserInfoDTO();
+                userInfo.Id = User.Id;
+                userInfo.Username = User.Username;
+                userInfo.Score = User.Score;
+                userInfo.UserImg = User.UserImg;
+                return Ok(userInfo);
             }
         }
 
-        [HttpPost("InsertUser")]
-        public async Task<HttpStatusCode> InsertUser(UserDTO User)
-        {
-            Guid myuuid = Guid.NewGuid();
-            string myuuidAsString = myuuid.ToString();
-            var entity = new User()
-            {
-                UserId = myuuidAsString,
-                Username = User.Username,
-                Password = User.Password,
-                Score = 0
-            };
-            MydbContext.Users.Add(entity);
-            await MydbContext.SaveChangesAsync();
-            return HttpStatusCode.Created;
-        }
+        // [HttpPost("UploadIMG")]
+        // public async Task<HttpStatusCode> upload(IFormFile Image){
+        //     try{
+        //         var filepath = Path.Combine(Directory.GetCurrentDirectory(),"static",Image.FileName);
+        //         await Image.CopyToAsync(new FileStream(filepath, FileMode.Create));
+        //         return HttpStatusCode.OK;
+        //     }catch(Exception err){
+        //         return HttpStatusCode.BadRequest;
+        //     }
+           
+        // }
 
         // [HttpPut("UpdateUser")]
         // public async Task<HttpStatusCode> UpdateUser(UserDTO User)

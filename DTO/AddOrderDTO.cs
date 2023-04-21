@@ -1,12 +1,8 @@
-﻿namespace server.DTO
+namespace server.DTO
 {
-    public class OrderDTO
+    public class AddOrderDTO
     {
-        public int Id { get; set; }
-
-        public string? UserId { get; set; }
-
-        public string? OrderId { get; set; } 
+        public string? UserId { get; set; } 
 
         public int PiorityScore {get; set;}
 

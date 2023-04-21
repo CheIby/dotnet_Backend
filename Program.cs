@@ -4,6 +4,7 @@ using server.Entities;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,8 +39,26 @@ builder.Services.AddAuthentication(options =>
    };
 });
 builder.Services.AddAuthorization();
+builder.Services.AddHttpContextAccessor();
+
+var  MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: MyAllowSpecificOrigins,
+                      policy  =>
+                      {
+                          policy.WithOrigins("*").AllowAnyHeader()
+                        .AllowAnyMethod();
+                      });
+});
 
 var app = builder.Build();
+
+app.UseFileServer(new FileServerOptions{
+    FileProvider = new PhysicalFileProvider(Path.Combine(Directory.GetCurrentDirectory(),"static")),
+    RequestPath="/static",
+    EnableDefaultFiles=true
+});
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -49,6 +68,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+app.UseCors(MyAllowSpecificOrigins);
 
 app.UseAuthentication();
 app.UseAuthorization(); 
